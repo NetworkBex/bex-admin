@@ -8,7 +8,7 @@ import { Field, Input, Textarea } from '@/components/ui/Input';
 import { DataTable, type Column } from '@/components/DataTable';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
-import api, { coreAPI } from '@/lib/api';
+import api, { coreAPI, parseApiError } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { formatMoney, cn } from '@/lib/utils';
 
@@ -195,33 +195,20 @@ function CurrenciesTab() {
   const save = async () => {
     if (!draft || !draft.currency || !draft.address) { push('Currency and address are required', 'error'); return; }
     try {
-      if (editing) {
-        await fetch(`http://localhost:8000/api/core/currencies/${editing.id}/`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('admin_access')}` },
-          body: JSON.stringify(draft),
-        });
-        push('Currency updated', 'success');
-      } else {
-        await fetch('http://localhost:8000/api/core/currencies/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('admin_access')}` },
-          body: JSON.stringify(draft),
-        });
-        push('Currency added', 'success');
-      }
+      if (editing) { await coreAPI.updateCurrency(editing.id, draft); push('Currency updated', 'success'); }
+      else { await coreAPI.createCurrency(draft); push('Currency added', 'success'); }
       setDraft(null); setEditing(null);
       setRefresh((n) => n + 1);
-    } catch { push('Save failed', 'error'); }
+    } catch (e) { push(parseApiError(e, 'Save failed'), 'error'); }
   };
 
   const remove = async (id: number) => {
     if (!confirm('Delete this currency?')) return;
     try {
-      await fetch(`http://localhost:8000/api/core/currencies/${id}/`, { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('admin_access')}` } });
+      await coreAPI.deleteCurrency(id);
       push('Deleted', 'success');
       setRefresh((n) => n + 1);
-    } catch { push('Delete failed', 'error'); }
+    } catch (e) { push(parseApiError(e, 'Delete failed'), 'error'); }
   };
 
   const columns: Column<any>[] = [
@@ -272,20 +259,14 @@ function InvestPlansTab() {
 
   const save = async () => {
     if (!draft) return;
+    if (!draft.name?.trim()) { push('Name is required', 'error'); return; }
     try {
-      const url = editing
-        ? `http://localhost:8000/api/core/invest-plans/${editing.id}/`
-        : 'http://localhost:8000/api/core/invest-plans/';
-      const r = await fetch(url, {
-        method: editing ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('admin_access')}` },
-        body: JSON.stringify(draft),
-      });
-      if (!r.ok) throw new Error('save failed');
+      if (editing) await coreAPI.updateInvestPlan(editing.id, draft);
+      else await coreAPI.createInvestPlan(draft);
       push(editing ? 'Plan updated' : 'Plan created', 'success');
       setDraft(null); setEditing(null);
       setRefresh((n) => n + 1);
-    } catch { push('Save failed', 'error'); }
+    } catch (e) { push(parseApiError(e, 'Save failed'), 'error'); }
   };
 
   const columns: Column<any>[] = [
@@ -327,6 +308,7 @@ function TestimoniesTab() {
   const [refresh, setRefresh] = useState(0);
   const [draft, setDraft] = useState<{ author: string; body: string } | null>(null);
   const [editing, setEditing] = useState<any | null>(null);
+  const { push } = useToast();
 
   useEffect(() => {
     setLoading(true);
@@ -334,14 +316,13 @@ function TestimoniesTab() {
   }, [refresh]);
 
   const save = async () => {
-    if (!draft?.author || !draft.body) return;
-    const url = editing ? `http://localhost:8000/api/core/testimonies/${editing.id}/` : 'http://localhost:8000/api/core/testimonies/';
-    await fetch(url, {
-      method: editing ? 'PATCH' : 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('admin_access')}` },
-      body: JSON.stringify(draft),
-    });
-    setDraft(null); setEditing(null); setRefresh((n) => n + 1);
+    if (!draft?.author || !draft.body) { push('Author and body are required', 'error'); return; }
+    try {
+      if (editing) await coreAPI.updateTestimony(editing.id, draft);
+      else await coreAPI.createTestimony(draft);
+      push(editing ? 'Testimony updated' : 'Testimony created', 'success');
+      setDraft(null); setEditing(null); setRefresh((n) => n + 1);
+    } catch (e) { push(parseApiError(e, 'Save failed'), 'error'); }
   };
 
   return (
@@ -380,6 +361,7 @@ function BlogTab() {
   const [refresh, setRefresh] = useState(0);
   const [draft, setDraft] = useState<any | null>(null);
   const [editing, setEditing] = useState<any | null>(null);
+  const { push } = useToast();
 
   useEffect(() => {
     setLoading(true);
@@ -387,14 +369,13 @@ function BlogTab() {
   }, [refresh]);
 
   const save = async () => {
-    if (!draft?.title) return;
-    const url = editing ? `http://localhost:8000/api/core/blog/${editing.id}/` : 'http://localhost:8000/api/core/blog/';
-    await fetch(url, {
-      method: editing ? 'PATCH' : 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('admin_access')}` },
-      body: JSON.stringify(draft),
-    });
-    setDraft(null); setEditing(null); setRefresh((n) => n + 1);
+    if (!draft?.title) { push('Title is required', 'error'); return; }
+    try {
+      if (editing) await coreAPI.updateBlog(editing.id, draft);
+      else await coreAPI.createBlog(draft);
+      push(editing ? 'Post updated' : 'Post created', 'success');
+      setDraft(null); setEditing(null); setRefresh((n) => n + 1);
+    } catch (e) { push(parseApiError(e, 'Save failed'), 'error'); }
   };
 
   return (
@@ -485,33 +466,23 @@ function AnnouncementsTab() {
       ['event_start', 'event_end', 'qualification_start', 'qualification_end'].forEach((k) => {
         if (clean[k] === '') clean[k] = null;
       });
-      const url = editing
-        ? `http://localhost:8000/api/core/announcements/${editing.id}/`
-        : 'http://localhost:8000/api/core/announcements/';
-      const r = await fetch(url, {
-        method: editing ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('admin_access')}` },
-        body: JSON.stringify(clean),
-      });
-      if (!r.ok) throw new Error('save failed');
+      if (editing) await coreAPI.updateAnnouncement(editing.id, clean);
+      else await coreAPI.createAnnouncement(clean);
       push(editing ? 'Announcement updated' : 'Announcement created', 'success');
       setDraft(null); setEditing(null);
       setRefresh((n) => n + 1);
     } catch (e: any) {
-      push('Save failed', 'error');
+      push(parseApiError(e, 'Save failed'), 'error');
     } finally { setSaving(false); }
   };
 
   const remove = async (id: number) => {
     if (!confirm('Delete this announcement?')) return;
     try {
-      await fetch(`http://localhost:8000/api/core/announcements/${id}/`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${localStorage.getItem('admin_access')}` },
-      });
+      await coreAPI.deleteAnnouncement(id);
       push('Deleted', 'success');
       setRefresh((n) => n + 1);
-    } catch { push('Delete failed', 'error'); }
+    } catch (e) { push(parseApiError(e, 'Delete failed'), 'error'); }
   };
 
   const call = async (id: number, endpoint: 'publish' | 'unpublish' | 'duplicate', successMsg: string) => {
