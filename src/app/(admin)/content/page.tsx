@@ -58,7 +58,7 @@ export default function ContentPage() {
 }
 
 const EMPTY_WEBINAR = {
-  title: '', speaker: '', description: '', image_url: '',
+  title: '', speaker: '', hosts: [] as any[], description: '', image_url: '',
   scheduled_for: '', duration_minutes: 60, join_url: '', replay_url: '',
   is_published: true, sort_order: 100,
 };
@@ -82,6 +82,10 @@ function WebinarsTab() {
 
   const d = draft || EMPTY_WEBINAR;
   const set = (k: string, v: any) => setDraft({ ...(draft || EMPTY_WEBINAR), [k]: v });
+  const hosts: any[] = d.hosts || [];
+  const addHost = () => set('hosts', [...hosts, { name: '', role: '', avatar_url: '' }]);
+  const updateHost = (i: number, k: string, v: string) => set('hosts', hosts.map((h, idx) => idx === i ? { ...h, [k]: v } : h));
+  const removeHost = (i: number) => set('hosts', hosts.filter((_, idx) => idx !== i));
 
   const save = async () => {
     if (!d.title) { push('Title is required', 'error'); return; }
@@ -110,7 +114,7 @@ function WebinarsTab() {
     { key: 'pub', header: 'Live', align: 'center', cell: (r) => r.is_published ? <span className="inline-flex size-2 rounded-full bg-success" /> : <span className="inline-flex size-2 rounded-full bg-fg-subtle" />, width: '60px' },
     { key: 'act', header: '', align: 'right', cell: (r) => (
       <div className="flex justify-end gap-1">
-        <Button size="xs" variant="ghost" onClick={() => { setEditing(r); setDraft({ ...r, scheduled_for: r.scheduled_for ? String(r.scheduled_for).slice(0, 16) : '' }); }}>Edit</Button>
+        <Button size="xs" variant="ghost" onClick={() => { setEditing(r); setDraft({ ...r, scheduled_for: r.scheduled_for ? String(r.scheduled_for).slice(0, 16) : '', hosts: (r.hosts && r.hosts.length) ? r.hosts : (r.speaker ? [{ name: r.speaker, role: '', avatar_url: '' }] : []) }); }}>Edit</Button>
         <Button size="xs" variant="ghost" onClick={() => remove(r.id)} leadingIcon={<Trash className="size-3" />}>Delete</Button>
       </div>
     ), width: '130px' },
@@ -124,11 +128,27 @@ function WebinarsTab() {
           action={editing && <Button size="sm" variant="secondary" onClick={() => { setEditing(null); setDraft(null); }}>Cancel</Button>}
         />
         <CardBody className="space-y-4">
-          <div className="grid sm:grid-cols-2 gap-3">
-            <Field label="Title" required><Input value={d.title} onChange={(e) => set('title', e.target.value)} /></Field>
-            <Field label="Speaker / host"><Input value={d.speaker} onChange={(e) => set('speaker', e.target.value)} placeholder="Daniel Mercer, Head of Trading" /></Field>
-          </div>
+          <Field label="Title" required><Input value={d.title} onChange={(e) => set('title', e.target.value)} /></Field>
           <Field label="Description"><Textarea rows={3} value={d.description} onChange={(e) => set('description', e.target.value)} /></Field>
+
+          {/* Hosts / speakers — add as many as needed */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[13px] font-medium text-fg">Hosts / speakers</label>
+              <Button size="xs" variant="secondary" onClick={addHost} leadingIcon={<Plus className="size-3" />}>Add host</Button>
+            </div>
+            {hosts.length === 0 && <p className="text-[12px] text-fg-muted mb-2">No hosts yet — add one or more speakers for this session.</p>}
+            <div className="space-y-2">
+              {hosts.map((h, i) => (
+                <div key={i} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1.4fr_auto] gap-2 items-center">
+                  <Input value={h.name || ''} onChange={(e) => updateHost(i, 'name', e.target.value)} placeholder="Name" />
+                  <Input value={h.role || ''} onChange={(e) => updateHost(i, 'role', e.target.value)} placeholder="Role (e.g. Head of Trading)" />
+                  <Input value={h.avatar_url || ''} onChange={(e) => updateHost(i, 'avatar_url', e.target.value)} placeholder="Avatar image URL" />
+                  <Button size="xs" variant="ghost" onClick={() => removeHost(i)} leadingIcon={<Trash className="size-3" />} aria-label="Remove host" />
+                </div>
+              ))}
+            </div>
+          </div>
           <Field label="Cover image URL">
             <Input value={d.image_url} onChange={(e) => set('image_url', e.target.value)} placeholder="https://…/cover.jpg  (full URL or /public path)" />
           </Field>
