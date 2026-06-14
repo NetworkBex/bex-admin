@@ -1,18 +1,18 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Newspaper, Wallet, RefreshCcw, Plus, Trash2, Save, Megaphone, Trash } from 'lucide-react';
+import { Newspaper, Wallet, RefreshCcw, Plus, Trash2, Save, Megaphone, Trash, Video } from 'lucide-react';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, Textarea } from '@/components/ui/Input';
 import { DataTable, type Column } from '@/components/DataTable';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
-import { coreAPI } from '@/lib/api';
+import api, { coreAPI } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { formatMoney, cn } from '@/lib/utils';
 
-type Tab = 'currencies' | 'invest-plans' | 'testimonies' | 'blog' | 'announcements';
+type Tab = 'currencies' | 'invest-plans' | 'testimonies' | 'blog' | 'announcements' | 'webinars';
 
 export default function ContentPage() {
   const [tab, setTab] = useState<Tab>('currencies');
@@ -32,6 +32,7 @@ export default function ContentPage() {
           ['testimonies',   'Testimonies',   Newspaper],
           ['blog',          'Blog posts',    Newspaper],
           ['announcements', 'Announcements', Megaphone],
+          ['webinars',      'Webinars',      Video],
         ] as [Tab, string, any][]).map(([key, label, Icon]) => (
           <button
             key={key}
@@ -51,7 +52,110 @@ export default function ContentPage() {
       {tab === 'testimonies'   && <TestimoniesTab />}
       {tab === 'blog'          && <BlogTab />}
       {tab === 'announcements' && <AnnouncementsTab />}
+      {tab === 'webinars'      && <WebinarsTab />}
     </div>
+  );
+}
+
+const EMPTY_WEBINAR = {
+  title: '', speaker: '', description: '', image_url: '',
+  scheduled_for: '', duration_minutes: 60, join_url: '', replay_url: '',
+  is_published: true, sort_order: 100,
+};
+
+function WebinarsTab() {
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refresh, setRefresh] = useState(0);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [draft, setDraft] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
+  const { push } = useToast();
+
+  useEffect(() => {
+    setLoading(true);
+    api.get('/core/webinars/')
+      .then((r: any) => setRows(r.data?.results || r.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [refresh]);
+
+  const d = draft || EMPTY_WEBINAR;
+  const set = (k: string, v: any) => setDraft({ ...(draft || EMPTY_WEBINAR), [k]: v });
+
+  const save = async () => {
+    if (!d.title) { push('Title is required', 'error'); return; }
+    if (!d.scheduled_for) { push('Air date & time is required', 'error'); return; }
+    setSaving(true);
+    try {
+      const body = { ...EMPTY_WEBINAR, ...draft };
+      if (editing) await api.patch(`/core/webinars/${editing.id}/`, body);
+      else await api.post('/core/webinars/', body);
+      push(editing ? 'Webinar updated' : 'Webinar created', 'success');
+      setDraft(null); setEditing(null); setRefresh((n) => n + 1);
+    } catch { push('Save failed', 'error'); } finally { setSaving(false); }
+  };
+
+  const remove = async (id: number) => {
+    if (!confirm('Delete this webinar?')) return;
+    try { await api.delete(`/core/webinars/${id}/`); push('Deleted', 'success'); setRefresh((n) => n + 1); }
+    catch { push('Delete failed', 'error'); }
+  };
+
+  const columns: Column<any>[] = [
+    { key: 'title', header: 'Title', cell: (r) => <span className="font-medium text-fg line-clamp-1">{r.title}</span> },
+    { key: 'speaker', header: 'Speaker', cell: (r) => <span className="text-[12px] text-fg-muted">{r.speaker || '—'}</span>, width: '160px' },
+    { key: 'when', header: 'Air date', cell: (r) => <span className="tabular text-[12px] text-fg-muted">{r.scheduled_for ? new Date(r.scheduled_for).toLocaleString() : '—'}</span>, width: '180px' },
+    { key: 'status', header: 'Status', cell: (r) => <span className="text-[11px] uppercase tracking-wider font-semibold text-fg-muted">{r.status || '—'}</span>, width: '90px' },
+    { key: 'pub', header: 'Live', align: 'center', cell: (r) => r.is_published ? <span className="inline-flex size-2 rounded-full bg-success" /> : <span className="inline-flex size-2 rounded-full bg-fg-subtle" />, width: '60px' },
+    { key: 'act', header: '', align: 'right', cell: (r) => (
+      <div className="flex justify-end gap-1">
+        <Button size="xs" variant="ghost" onClick={() => { setEditing(r); setDraft({ ...r, scheduled_for: r.scheduled_for ? String(r.scheduled_for).slice(0, 16) : '' }); }}>Edit</Button>
+        <Button size="xs" variant="ghost" onClick={() => remove(r.id)} leadingIcon={<Trash className="size-3" />}>Delete</Button>
+      </div>
+    ), width: '130px' },
+  ];
+
+  return (
+    <>
+      <Card className="mb-4">
+        <CardHeader
+          title={editing ? 'Edit webinar' : 'Add webinar'}
+          action={editing && <Button size="sm" variant="secondary" onClick={() => { setEditing(null); setDraft(null); }}>Cancel</Button>}
+        />
+        <CardBody className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Field label="Title" required><Input value={d.title} onChange={(e) => set('title', e.target.value)} /></Field>
+            <Field label="Speaker / host"><Input value={d.speaker} onChange={(e) => set('speaker', e.target.value)} placeholder="Daniel Mercer, Head of Trading" /></Field>
+          </div>
+          <Field label="Description"><Textarea rows={3} value={d.description} onChange={(e) => set('description', e.target.value)} /></Field>
+          <Field label="Cover image URL">
+            <Input value={d.image_url} onChange={(e) => set('image_url', e.target.value)} placeholder="https://…/cover.jpg  (full URL or /public path)" />
+          </Field>
+          {d.image_url ? <img src={d.image_url} alt="" className="h-28 rounded-lg border border-hairline object-cover" /> : null}
+          <div className="grid sm:grid-cols-3 gap-3">
+            <Field label="Air date & time" required><Input type="datetime-local" value={d.scheduled_for} onChange={(e) => set('scheduled_for', e.target.value)} /></Field>
+            <Field label="Duration (min)"><Input type="number" value={d.duration_minutes} onChange={(e) => set('duration_minutes', parseInt(e.target.value) || 0)} /></Field>
+            <Field label="Sort order"><Input type="number" value={d.sort_order} onChange={(e) => set('sort_order', parseInt(e.target.value) || 0)} /></Field>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Field label="Join URL (live)"><Input value={d.join_url} onChange={(e) => set('join_url', e.target.value)} placeholder="https://zoom.us/j/…" /></Field>
+            <Field label="Replay URL"><Input value={d.replay_url} onChange={(e) => set('replay_url', e.target.value)} placeholder="https://youtu.be/…" /></Field>
+          </div>
+          <label className="flex items-center gap-2 text-[13px] text-fg cursor-pointer">
+            <input type="checkbox" checked={!!d.is_published} onChange={(e) => set('is_published', e.target.checked)} className="size-4 accent-[var(--accent)]" />
+            Published (visible to users)
+          </label>
+          <div>
+            <Button onClick={save} loading={saving} leadingIcon={<Save className="size-4" />}>{editing ? 'Update' : 'Create'} webinar</Button>
+          </div>
+        </CardBody>
+      </Card>
+
+      {loading ? <div className="skeleton h-32" />
+        : rows.length === 0 ? <EmptyState icon={Video} title="No webinars yet" />
+        : <DataTable rows={rows} columns={columns} pageSize={15} />}
+    </>
   );
 }
 
