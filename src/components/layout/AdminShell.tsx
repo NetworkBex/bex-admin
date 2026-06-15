@@ -94,7 +94,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         <div className="h-14 px-4 flex items-center justify-between border-b border-hairline">
           <Link href="/dashboard" className={cn('flex items-center gap-2 font-semibold tracking-tight', collapsed && 'justify-center w-full')}>
             <span className="size-7 rounded-md bg-center bg-cover shrink-0"
-                  style={{ backgroundImage: 'url(/logo.png), url(/logo.svg)' }} role="img" aria-label="BEX" />
+                  style={{ backgroundImage: 'url(/logo.png)' }} role="img" aria-label="BEX" />
             {!collapsed && <span className="text-[15px]">BEX<span className="text-fg-muted">·Admin</span></span>}
           </Link>
           <button
