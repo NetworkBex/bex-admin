@@ -179,13 +179,17 @@ function WebinarsTab() {
   );
 }
 
+const NETWORK_OPTIONS = ['Ethereum', 'Polygon', 'Arbitrum', 'Tron', 'BSC', 'Solana', 'Bitcoin', 'Base', 'Optimism', 'Avalanche'];
+
 function CurrenciesTab() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refresh, setRefresh] = useState(0);
-  const [draft, setDraft] = useState<{ currency: string; address: string } | null>(null);
+  const [draft, setDraft] = useState<{ currency: string; network: string; address: string } | null>(null);
   const [editing, setEditing] = useState<any | null>(null);
   const { push } = useToast();
+
+  const blank = { currency: '', network: '', address: '' };
 
   useEffect(() => {
     setLoading(true);
@@ -193,7 +197,7 @@ function CurrenciesTab() {
   }, [refresh]);
 
   const save = async () => {
-    if (!draft || !draft.currency || !draft.address) { push('Currency and address are required', 'error'); return; }
+    if (!draft || !draft.currency || !draft.network || !draft.address) { push('Ticker, network and address are all required', 'error'); return; }
     try {
       if (editing) { await coreAPI.updateCurrency(editing.id, draft); push('Currency updated', 'success'); }
       else { await coreAPI.createCurrency(draft); push('Currency added', 'success'); }
@@ -203,7 +207,7 @@ function CurrenciesTab() {
   };
 
   const remove = async (id: number) => {
-    if (!confirm('Delete this currency?')) return;
+    if (!confirm('Delete this deposit address?')) return;
     try {
       await coreAPI.deleteCurrency(id);
       push('Deleted', 'success');
@@ -212,24 +216,30 @@ function CurrenciesTab() {
   };
 
   const columns: Column<any>[] = [
-    { key: 'currency', header: 'Ticker', sortBy: (r) => r.currency, cell: (r) => <span className="font-mono font-semibold text-fg">{r.currency}</span>, width: '120px' },
+    { key: 'currency', header: 'Ticker', sortBy: (r) => r.currency, cell: (r) => <span className="font-mono font-semibold text-fg">{r.currency}</span>, width: '100px' },
+    { key: 'network', header: 'Network', sortBy: (r) => r.network, cell: (r) => <span className="text-fg-muted text-[13px]">{r.network || '—'}</span>, width: '120px' },
     { key: 'address', header: 'Deposit address', cell: (r) => <span className="font-mono text-[11.5px] text-fg-muted break-all">{r.address || '—'}</span> },
     { key: 'actions', header: '', align: 'right',
       cell: (r) => (
         <div className="flex justify-end gap-1">
-          <Button size="xs" variant="ghost" onClick={() => { setEditing(r); setDraft({ currency: r.currency, address: r.address || '' }); }}>Edit</Button>
+          <Button size="xs" variant="ghost" onClick={() => { setEditing(r); setDraft({ currency: r.currency, network: r.network || '', address: r.address || '' }); }}>Edit</Button>
           <Button size="xs" variant="ghost" onClick={() => remove(r.id)} leadingIcon={<Trash2 className="size-3" />}>Delete</Button>
         </div>
-      ), width: '160px' },
+      ), width: '140px' },
   ];
 
   return (
     <>
       <Card className="mb-4">
-        <CardHeader title={editing ? 'Edit currency' : 'Add currency'} />
-        <CardBody className="grid sm:grid-cols-[160px_1fr_auto] gap-3 items-end">
-          <Field label="Ticker"><Input value={draft?.currency || ''} onChange={(e) => setDraft({ ...(draft || { currency: '', address: '' }), currency: e.target.value.toUpperCase().slice(0, 8) })} placeholder="BTC" /></Field>
-          <Field label="Deposit address"><Input value={draft?.address || ''} onChange={(e) => setDraft({ ...(draft || { currency: '', address: '' }), address: e.target.value })} placeholder="bc1q…" /></Field>
+        <CardHeader title={editing ? 'Edit deposit address' : 'Add deposit address'}
+          description="Each asset can have one address per network — users pick the network on the deposit page and see the matching wallet." />
+        <CardBody className="grid sm:grid-cols-[120px_160px_1fr_auto] gap-3 items-end">
+          <Field label="Ticker"><Input value={draft?.currency || ''} onChange={(e) => setDraft({ ...(draft || blank), currency: e.target.value.toUpperCase().slice(0, 8) })} placeholder="USDT" /></Field>
+          <Field label="Network">
+            <Input list="net-opts" value={draft?.network || ''} onChange={(e) => setDraft({ ...(draft || blank), network: e.target.value })} placeholder="Ethereum" />
+            <datalist id="net-opts">{NETWORK_OPTIONS.map((n) => <option key={n} value={n} />)}</datalist>
+          </Field>
+          <Field label="Deposit address"><Input value={draft?.address || ''} onChange={(e) => setDraft({ ...(draft || blank), address: e.target.value })} placeholder="0x… / T… / bc1…" /></Field>
           <div className="flex gap-2">
             {editing && <Button variant="secondary" onClick={() => { setEditing(null); setDraft(null); }}>Cancel</Button>}
             <Button onClick={save} leadingIcon={<Save className="size-3.5" />}>{editing ? 'Update' : 'Add'}</Button>
