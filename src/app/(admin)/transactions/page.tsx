@@ -240,7 +240,7 @@ export default function TransactionsPage() {
             <KV label="Status"     value={<StatusPill status={openTx.status} labels={TX_STATUS} />} />
             <KV label="Customer"   value={openTx.customer_name} />
             <KV label="Method"     value={openTx.method || '—'} />
-            <KV label="Currency"   value={openTx.currency_name || '—'} />
+            <KV label="Asset"      value={openTx.currency_name || (openTx as any).name || '—'} />
             {(openTx as any).network && <KV label="Network" value={(openTx as any).network} />}
             <KV label="Created"    value={`${shortDate(openTx.date_created)} · ${relativeTime(new Date(openTx.date_created).toISOString())}`} />
             {openTx.customer_address && <KV label="Customer addr" value={<code className="text-[12px] break-all">{openTx.customer_address}</code>} />}
