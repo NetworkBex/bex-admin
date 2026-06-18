@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   CreditCard, RefreshCcw, Search, Check, X, Upload, ArrowUpRight, ArrowDownRight,
-  Receipt, AlertCircle, ChevronRight,
+  Receipt, AlertCircle, ChevronRight, Paperclip,
 } from 'lucide-react';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Badge, StatusPill } from '@/components/ui/Badge';
@@ -246,6 +246,14 @@ export default function TransactionsPage() {
             {openTx.customer_address && <KV label="Customer addr" value={<code className="text-[12px] break-all">{openTx.customer_address}</code>} />}
             {openTx.company_address  && <KV label="Company addr"  value={<code className="text-[12px] break-all">{openTx.company_address}</code>} />}
             {openTx.code             && <KV label="Withdrawal code" value={openTx.code} />}
+            {((openTx as any).prove_url || (openTx as any).prove) && (
+              <KV label="Payment proof" value={
+                <a href={(openTx as any).prove_url || (openTx as any).prove} target="_blank" rel="noopener noreferrer"
+                   className="inline-flex items-center gap-1.5 text-accent hover:underline">
+                  <Paperclip className="size-3.5" /> View receipt
+                </a>
+              } />
+            )}
           </div>
         )}
       </Drawer>
