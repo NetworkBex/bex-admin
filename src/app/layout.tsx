@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ToastProvider } from '@/components/Toast';
 import { themeInitScript } from '@/components/ui/ThemeToggle';
@@ -6,6 +6,12 @@ import { themeInitScript } from '@/components/ui/ThemeToggle';
 export const metadata: Metadata = {
   title: 'BEX Admin',
   description: 'Operator console for the BEX Network platform.',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

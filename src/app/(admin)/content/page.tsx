@@ -25,7 +25,7 @@ export default function ContentPage() {
         description="Currencies, invest tiers, marketing copy."
       />
 
-      <div className="flex items-center gap-1 mb-4 border-b border-hairline">
+      <div className="flex items-center gap-1 mb-4 border-b border-hairline overflow-x-auto">
         {([
           ['currencies',    'Currencies',    Wallet],
           ['invest-plans',  'Invest plans',  Plus],
@@ -38,7 +38,7 @@ export default function ContentPage() {
             key={key}
             onClick={() => setTab(key)}
             className={cn(
-              'px-3 h-10 text-[12.5px] font-medium inline-flex items-center gap-1.5 border-b-2 transition-colors',
+              'px-3 h-10 text-[12.5px] font-medium inline-flex items-center gap-1.5 border-b-2 transition-colors shrink-0 whitespace-nowrap',
               tab === key ? 'border-accent text-fg' : 'border-transparent text-fg-muted hover:text-fg',
             )}
           >

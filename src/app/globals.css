@@ -127,6 +127,9 @@ html {
   font-size: 14px;  /* admin = slightly tighter than marketing */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Stop stray wide elements from scrolling the whole page sideways on mobile.
+     `clip` (not `hidden`) keeps the sticky header working. */
+  overflow-x: clip;
 }
 
 html, body {

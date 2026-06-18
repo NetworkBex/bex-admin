@@ -8,7 +8,7 @@ import {
   CircleDollarSign, Cog, Cpu, CreditCard, Database, FileCheck2, FileText, Gavel,
   Globe2, GraduationCap, History, KeyRound, LayoutDashboard, LifeBuoy, LogOut,
   Mail, MessageSquare, Network, Newspaper, Plug, Radio, Receipt, Server, Settings, ShieldCheck,
-  Sparkles, Sun, Moon, TrendingUp, UserCog, Users, Vote, Wallet, Zap, BarChart3, type LucideIcon,
+  Sparkles, Sun, Moon, TrendingUp, UserCog, Users, Vote, Wallet, Zap, BarChart3, Menu, X, type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRequireAdmin } from '@/components/auth/useAuth';
@@ -46,8 +46,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [healthOk, setHealthOk] = useState<boolean | null>(null);
   const [auditCount, setAuditCount] = useState<number | null>(null);
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   // Live status pill for "Ops console" and "Audit log" badges.
   useEffect(() => {
@@ -89,9 +93,25 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className={cn('min-h-screen grid bg-canvas text-fg', collapsed ? 'grid-cols-[64px_1fr]' : 'grid-cols-[260px_1fr]')}>
-      {/* ─── Sidebar ──────────────────────────────────────────────── */}
-      <aside className="border-r border-hairline bg-surface flex flex-col">
+    <div className="min-h-screen bg-canvas text-fg">
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <button
+          aria-hidden
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* ─── Sidebar — off-canvas drawer on mobile, fixed rail on desktop ─ */}
+      <aside
+        className={cn(
+          'fixed top-0 bottom-0 left-0 z-50 w-[260px] border-r border-hairline bg-surface flex flex-col',
+          'transition-transform duration-200 ease-out',
+          collapsed ? 'lg:w-[64px]' : 'lg:w-[260px]',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+        )}
+      >
         <div className="h-14 px-4 flex items-center justify-between border-b border-hairline">
           <Link href="/dashboard" className={cn('flex items-center gap-2 font-semibold tracking-tight', collapsed && 'justify-center w-full')}>
             <span className="size-7 rounded-md bg-center bg-cover shrink-0"
@@ -105,6 +125,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             title={collapsed ? 'Expand' : 'Collapse'}
           >
             {collapsed ? <ChevronsRight className="size-3.5" /> : <ChevronsLeft className="size-3.5" />}
+          </button>
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="text-fg-subtle hover:text-fg lg:hidden grid place-items-center size-7 rounded-md hover:bg-surface-2"
+            aria-label="Close menu"
+          >
+            <X className="size-4" />
           </button>
         </div>
 
@@ -171,10 +198,19 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* ─── Main column ──────────────────────────────────────────── */}
-      <main className="min-w-0 flex flex-col">
-        <header className="h-14 border-b border-hairline bg-surface/80 backdrop-blur-md px-5 flex items-center justify-between sticky top-0 z-10">
-          <Breadcrumb pathname={pathname} />
-          <div className="flex items-center gap-2">
+      <main className={cn('min-h-screen flex flex-col min-w-0 transition-[padding] duration-200', collapsed ? 'lg:pl-[64px]' : 'lg:pl-[260px]')}>
+        <header className="h-14 border-b border-hairline bg-surface/80 backdrop-blur-md px-4 sm:px-5 flex items-center justify-between gap-2 sticky top-0 z-30">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              onClick={() => { setCollapsed(false); setMobileOpen(true); }}
+              className="lg:hidden grid place-items-center size-9 -ml-1 rounded-md text-fg-muted hover:text-fg hover:bg-surface-2"
+              aria-label="Open menu"
+            >
+              <Menu className="size-5" />
+            </button>
+            <Breadcrumb pathname={pathname} />
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
             <span className="hidden md:inline-flex items-center gap-1.5 text-[11.5px] text-fg-subtle">
               <PulseDot tone={healthOk === false ? 'danger' : healthOk === null ? 'warning' : 'success'} />
               {healthOk === null ? 'checking…' : healthOk ? 'all systems ok' : 'degraded'}
