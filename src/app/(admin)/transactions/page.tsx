@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   CreditCard, RefreshCcw, Search, Check, X, Upload, ArrowUpRight, ArrowDownRight,
-  Receipt, AlertCircle, ChevronRight, Paperclip,
+  Receipt, AlertCircle, ChevronRight, Paperclip, Maximize2,
 } from 'lucide-react';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Badge, StatusPill } from '@/components/ui/Badge';
@@ -35,7 +35,15 @@ export default function TransactionsPage() {
   const [refresh, setRefresh] = useState(0);
   const [selected, setSelected] = useState<Set<string | number>>(new Set());
   const [openTx, setOpenTx] = useState<Tx | null>(null);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const { push } = useToast();
+
+  useEffect(() => {
+    if (!previewSrc) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPreviewSrc(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [previewSrc]);
 
   useEffect(() => {
     setLoading(true);
@@ -246,17 +254,64 @@ export default function TransactionsPage() {
             {openTx.customer_address && <KV label="Customer addr" value={<code className="text-[12px] break-all">{openTx.customer_address}</code>} />}
             {openTx.company_address  && <KV label="Company addr"  value={<code className="text-[12px] break-all">{openTx.company_address}</code>} />}
             {openTx.code             && <KV label="Withdrawal code" value={openTx.code} />}
-            {((openTx as any).prove_url || (openTx as any).prove) && (
-              <KV label="Payment proof" value={
-                <a href={(openTx as any).prove_url || (openTx as any).prove} target="_blank" rel="noopener noreferrer"
-                   className="inline-flex items-center gap-1.5 text-accent hover:underline">
-                  <Paperclip className="size-3.5" /> View receipt
-                </a>
-              } />
-            )}
+            {((openTx as any).prove_url || (openTx as any).prove) && (() => {
+              const src = (openTx as any).prove_url || (openTx as any).prove;
+              const isPdf = String(src).toLowerCase().split('?')[0].endsWith('.pdf');
+              return (
+                <KV label="Payment proof" value={
+                  isPdf ? (
+                    <a href={src} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-accent hover:underline">
+                      <Paperclip className="size-3.5" /> Open PDF
+                    </a>
+                  ) : (
+                    <button type="button" onClick={() => setPreviewSrc(src)}
+                      className="group relative block size-20 rounded-lg overflow-hidden border border-border hover:border-accent transition-colors"
+                      title="Click to enlarge">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt="Payment proof" className="size-full object-cover" />
+                      <span className="absolute inset-0 grid place-items-center bg-black/0 group-hover:bg-black/35 transition-colors">
+                        <Maximize2 className="size-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </span>
+                    </button>
+                  )
+                } />
+              );
+            })()}
           </div>
         )}
       </Drawer>
+
+      {/* Receipt lightbox */}
+      {previewSrc && (
+        <div
+          className="fixed inset-0 z-[1100] flex items-center justify-center p-4 sm:p-8 bg-black/80 backdrop-blur-sm animate-fade-in"
+          onClick={() => setPreviewSrc(null)}
+        >
+          <button
+            onClick={() => setPreviewSrc(null)}
+            className="absolute top-4 right-4 grid place-items-center size-10 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+            aria-label="Close"
+          >
+            <X className="size-5" />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={previewSrc}
+            alt="Payment proof"
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-full max-w-full rounded-lg shadow-2xl object-contain animate-rise-in"
+          />
+          <a
+            href={previewSrc}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="absolute bottom-5 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 text-[12px] text-white/80 hover:text-white"
+          >
+            <Maximize2 className="size-3.5" /> Open original
+          </a>
+        </div>
+      )}
     </div>
   );
 }
