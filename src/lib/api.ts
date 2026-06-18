@@ -77,6 +77,7 @@ export const transactionAPI = {
   list: (params?: any) => api.get('/transactions/', { params }),
   approve: (id: number) => api.post(`/transactions/${id}/approve/`),
   cancel: (id: number) => api.post(`/transactions/${id}/cancel/`),
+  setStatus: (id: number, status: number) => api.post(`/transactions/${id}/set_status/`, { status }),
   bulkAction: (data: { ids: number[]; action: 'approve' | 'cancel' }) =>
     api.post('/transactions/bulk_action/', data),
   uploadProof: (id: number, file: File) => {

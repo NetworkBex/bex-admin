@@ -24,7 +24,7 @@ type Tx = {
   date_created: string;
 };
 
-const TX_STATUS: Record<number, string> = { 0: 'Pending', 2: 'Processing', 3: 'Completed', 4: 'Failed' };
+const TX_STATUS: Record<number, string> = { 0: 'Pending', 1: 'Cancelled', 2: 'Processing', 3: 'Completed', 4: 'Failed' };
 
 export default function TransactionsPage() {
   const [rows, setRows] = useState<Tx[]>([]);
@@ -86,13 +86,36 @@ export default function TransactionsPage() {
     return { deposits, withdrawals, pending };
   }, [filtered]);
 
-  const decide = async (id: number, action: 'approve' | 'cancel') => {
+  const decide = async (id: number, action: 'approve' | 'cancel', tx?: Tx) => {
+    const t = tx ?? rows.find((r) => r.id === id);
+    const amt = t ? formatMoney(t.amount) : 'this transaction';
+    const verb = action === 'approve'
+      ? (t?.type === 'deposit' ? `approve & CREDIT ${amt}` : t?.type === 'withdraw' ? `approve (mark paid) ${amt}` : `approve ${amt}`)
+      : (t?.type === 'deposit' ? `cancel ${amt} (debits the user if it was credited)` : `cancel ${amt} (refunds the user)`);
+    if (!window.confirm(`Are you sure you want to ${verb}?`)) return false;
     try {
       if (action === 'approve') await transactionAPI.approve(id);
       else                      await transactionAPI.cancel(id);
       push(`Transaction ${action}d`, 'success');
       setRefresh((n) => n + 1);
-    } catch (e) { push('Action failed', 'error'); }
+      return true;
+    } catch (e) { push('Action failed', 'error'); return false; }
+  };
+
+  const changeStatus = async (id: number, status: number, tx?: Tx): Promise<boolean> => {
+    const t = tx ?? rows.find((r) => r.id === id);
+    const amt = t ? formatMoney(t.amount) : 'this transaction';
+    const label = TX_STATUS[status] ?? `status ${status}`;
+    let effect = '';
+    if (t?.type === 'deposit') effect = status === 3 ? ` — credits ${amt}` : t.status === 3 ? ` — debits ${amt}` : '';
+    if (t?.type === 'withdraw') effect = (status === 1 || status === 4) && (t.status === 0 || t.status === 2 || t.status === 3) ? ` — refunds ${amt}` : '';
+    if (!window.confirm(`Set this transaction to "${label}"${effect}?`)) return false;
+    try {
+      await transactionAPI.setStatus(id, status);
+      push(`Marked ${label}`, 'success');
+      setRefresh((n) => n + 1);
+      return true;
+    } catch (e: any) { push(e?.response?.data?.error || 'Action failed', 'error'); return false; }
   };
 
   const columns: Column<Tx>[] = [
@@ -175,6 +198,7 @@ export default function TransactionsPage() {
                   className="h-9 px-3 bg-surface text-fg text-sm border border-border rounded-md">
             <option value="all">All statuses</option>
             <option value="0">Pending</option>
+            <option value="1">Cancelled</option>
             <option value="2">Processing</option>
             <option value="3">Completed</option>
             <option value="4">Failed</option>
@@ -219,19 +243,25 @@ export default function TransactionsPage() {
             {openTx.customer_name} · {openTx.type} · {openTx.method || '—'}
           </span>
         )}
-        footer={openTx && (
-          <div className="flex items-center gap-2">
-            {openTx.status === 0 && (
-              <>
-                <Button size="sm" variant="secondary" leadingIcon={<Check className="size-3.5" />}
-                        onClick={async () => { await decide(openTx.id, 'approve'); setOpenTx(null); }}>
-                  Approve
-                </Button>
-                <Button size="sm" variant="ghost" leadingIcon={<X className="size-3.5" />}
-                        onClick={async () => { await decide(openTx.id, 'cancel'); setOpenTx(null); }}>
-                  Cancel
-                </Button>
-              </>
+        footer={openTx && (openTx.type === 'deposit' || openTx.type === 'withdraw') && (
+          <div className="flex flex-wrap items-center gap-2">
+            {openTx.status !== 3 && (
+              <Button size="sm" variant="primary" leadingIcon={<Check className="size-3.5" />}
+                      onClick={async () => { if (await decide(openTx.id, 'approve', openTx)) setOpenTx(null); }}>
+                {openTx.type === 'deposit' ? 'Approve & credit' : 'Mark paid'}
+              </Button>
+            )}
+            {openTx.status !== 0 && (
+              <Button size="sm" variant="secondary"
+                      onClick={async () => { if (await changeStatus(openTx.id, 0, openTx)) setOpenTx(null); }}>
+                Mark pending
+              </Button>
+            )}
+            {openTx.status !== 1 && (
+              <Button size="sm" variant="ghost" leadingIcon={<X className="size-3.5" />}
+                      onClick={async () => { if (await decide(openTx.id, 'cancel', openTx)) setOpenTx(null); }}>
+                Cancel
+              </Button>
             )}
           </div>
         )}
