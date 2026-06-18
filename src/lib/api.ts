@@ -153,6 +153,7 @@ export const auditAPI = {
 export const opsAPI = {
   health: () => api.get('/ops/health/'),
   stats: () => api.get('/ops/stats/'),
+  analytics: (days = 30) => api.get('/ops/analytics/', { params: { days } }),
   beat: () => api.get('/ops/beat/'),
   taskResults: () => api.get('/ops/task-results/'),
   logs: (lines = 200) => api.get('/ops/logs/', { params: { lines } }),

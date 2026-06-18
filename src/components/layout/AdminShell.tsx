@@ -8,7 +8,7 @@ import {
   CircleDollarSign, Cog, Cpu, CreditCard, Database, FileCheck2, FileText, Gavel,
   Globe2, GraduationCap, History, KeyRound, LayoutDashboard, LifeBuoy, LogOut,
   Mail, MessageSquare, Network, Newspaper, Plug, Radio, Receipt, Server, Settings, ShieldCheck,
-  Sparkles, Sun, Moon, TrendingUp, UserCog, Users, Vote, Wallet, Zap, type LucideIcon,
+  Sparkles, Sun, Moon, TrendingUp, UserCog, Users, Vote, Wallet, Zap, BarChart3, type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRequireAdmin } from '@/components/auth/useAuth';
@@ -26,6 +26,7 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { href: '/dashboard',     label: 'Overview',         icon: LayoutDashboard },
+  { href: '/analytics',     label: 'Analytics',        icon: BarChart3 },
   { href: '/customers',     label: 'Customers',        icon: Users,         group: 'Operate' },
   { href: '/transactions',  label: 'Transactions',     icon: CreditCard,   group: 'Operate' },
   { href: '/investments',   label: 'Investments',      icon: TrendingUp,   group: 'Operate' },
