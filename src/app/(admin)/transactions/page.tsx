@@ -231,10 +231,17 @@ export default function TransactionsPage() {
         {openTx && (
           <div className="space-y-4 text-[13px]">
             <KV label="Amount"     value={formatMoney(openTx.amount)} />
+            {openTx.type === 'withdraw' && Number((openTx as any).fee) > 0 && (
+              <>
+                <KV label="Fee"        value={`− ${formatMoney((openTx as any).fee)}`} />
+                <KV label="Net to pay" value={<span className="font-semibold text-fg">{formatMoney(Number(openTx.amount) - Number((openTx as any).fee))}</span>} />
+              </>
+            )}
             <KV label="Status"     value={<StatusPill status={openTx.status} labels={TX_STATUS} />} />
             <KV label="Customer"   value={openTx.customer_name} />
             <KV label="Method"     value={openTx.method || '—'} />
             <KV label="Currency"   value={openTx.currency_name || '—'} />
+            {(openTx as any).network && <KV label="Network" value={(openTx as any).network} />}
             <KV label="Created"    value={`${shortDate(openTx.date_created)} · ${relativeTime(new Date(openTx.date_created).toISOString())}`} />
             {openTx.customer_address && <KV label="Customer addr" value={<code className="text-[12px] break-all">{openTx.customer_address}</code>} />}
             {openTx.company_address  && <KV label="Company addr"  value={<code className="text-[12px] break-all">{openTx.company_address}</code>} />}

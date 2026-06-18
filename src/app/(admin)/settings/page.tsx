@@ -77,6 +77,10 @@ export default function SettingsPage() {
         <CardBody className="grid sm:grid-cols-2 gap-3">
           <Field label="Min deposit (USD)"><Input type="number" step="0.01" value={draft.min_deposit_usd} onChange={(e) => update('min_deposit_usd', +e.target.value)} /></Field>
           <Field label="Min withdraw (USD)"><Input type="number" step="0.01" value={draft.min_withdraw_usd} onChange={(e) => update('min_withdraw_usd', +e.target.value)} /></Field>
+          <Field label="Max withdraw (USD)" hint="0 = no maximum"><Input type="number" step="0.01" value={draft.max_withdraw_usd} onChange={(e) => update('max_withdraw_usd', +e.target.value)} /></Field>
+          <div />
+          <Field label="Withdraw fee (%)" hint="percentage of each withdrawal"><Input type="number" step="0.01" value={draft.withdraw_fee_percent} onChange={(e) => update('withdraw_fee_percent', +e.target.value)} /></Field>
+          <Field label="Withdraw fee (flat USD)" hint="fixed fee per withdrawal"><Input type="number" step="0.01" value={draft.withdraw_fee_flat_usd} onChange={(e) => update('withdraw_fee_flat_usd', +e.target.value)} /></Field>
         </CardBody>
       </Card>
 
