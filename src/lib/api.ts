@@ -100,6 +100,24 @@ export const earningsAPI = {
   summary: () => api.get('/earnings/summary/'),
 };
 
+export const broadcastAPI = {
+  meta: () => api.get('/notifications/admin/broadcasts/meta/'),
+  recipients: (segment: string, search?: string) =>
+    api.get('/notifications/admin/broadcasts/recipients/', { params: { segment, ...(search ? { search } : {}) } }),
+  history: () => api.get('/notifications/admin/broadcasts/'),
+  send: (data: {
+    kind: 'custom' | 'reminder';
+    user_ids: number[];
+    segment?: string;
+    subject?: string;
+    heading?: string;
+    body?: string;
+    cta_label?: string;
+    cta_url?: string;
+    reminder_type?: string;
+  }) => api.post('/notifications/admin/broadcasts/', data),
+};
+
 export const planAPI = {
   get: () => api.get('/affiliate/plan/'),
   adminGet: () => api.get('/affiliate/admin/plan/'),

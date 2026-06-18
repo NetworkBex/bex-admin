@@ -8,7 +8,7 @@ import {
   CircleDollarSign, Cog, Cpu, CreditCard, Database, FileCheck2, FileText, Gavel,
   Globe2, GraduationCap, History, KeyRound, LayoutDashboard, LifeBuoy, LogOut,
   Mail, MessageSquare, Network, Newspaper, Plug, Radio, Receipt, Server, Settings, ShieldCheck,
-  Sparkles, Sun, Moon, TrendingUp, UserCog, Users, Vote, Wallet, Zap, BarChart3, Menu, X, type LucideIcon,
+  Sparkles, Sun, Moon, TrendingUp, UserCog, Users, Vote, Wallet, Zap, BarChart3, Menu, X, Send, type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRequireAdmin } from '@/components/auth/useAuth';
@@ -33,6 +33,7 @@ const NAV: NavItem[] = [
   { href: '/affiliate',     label: 'Ambassador plan',  icon: Award,        group: 'Operate' },
   { href: '/affiliate/applications', label: 'Founding apps', icon: Vote,        group: 'Operate' },
   { href: '/content',       label: 'Content',          icon: Newspaper,    group: 'Operate' },
+  { href: '/broadcast',     label: 'Broadcast',        icon: Send,         group: 'Operate' },
   { href: '/wallets',       label: 'Wallets & KYC',    icon: KeyRound,     group: 'Operate' },
   { href: '/ops',           label: 'Ops console',      icon: Activity,     group: 'Operate', badge: 'health' },
   { href: '/livetrades',    label: 'Live trades',      icon: Radio,        group: 'Operate' },
