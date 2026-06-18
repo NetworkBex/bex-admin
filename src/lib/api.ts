@@ -67,6 +67,7 @@ export const userAPI = {
     api.post('/auth/customers/bulk_action/', data),
   detail: (id: number) => api.get(`/auth/customers/${id}/detail/`),
   referrals: (id: number) => api.get(`/auth/customers/referrals/`),
+  downline: (id: number) => api.get('/affiliate/downline/', { params: { customer_id: id } }),
   verifications: (id: number) => api.get('/auth/verifications/', { params: { customer: id } }),
   kyc: (id: number) => api.get('/auth/kyc/', { params: { customer: id } }),
   wallets: (id: number) => api.get('/auth/wallets/', { params: { customer: id } }),

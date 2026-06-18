@@ -33,6 +33,7 @@ type Props = {
 export function CustomerDetailDrawer({ customerId, onClose, onMutated }: Props) {
   const { push } = useToast();
   const [data, setData] = useState<CustomerDetailResponse | null>(null);
+  const [downline, setDownline] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [acting, setActing] = useState<string | null>(null);
@@ -44,8 +45,12 @@ export function CustomerDetailDrawer({ customerId, onClose, onMutated }: Props) 
     if (!customerId) return;
     setLoading(true); setError(null);
     try {
-      const res = await userAPI.detail(customerId);
+      const [res, dl] = await Promise.all([
+        userAPI.detail(customerId),
+        userAPI.downline(customerId).catch(() => null),
+      ]);
       setData(res.data);
+      setDownline(dl?.data ?? null);
     } catch (e) {
       setError(parseApiError(e, 'Failed to load customer'));
       setData(null);
@@ -285,6 +290,27 @@ export function CustomerDetailDrawer({ customerId, onClose, onMutated }: Props) 
             )}
           </section>
 
+          {/* Full downline tree */}
+          <section>
+            <SectionTitle>Downline tree
+              {downline ? (
+                <span className="text-fg-muted font-normal ml-2">
+                  ({downline.totalMembers} members · {downline.activeMembers} active · {downline.levels} levels · {formatMoney(downline.totalVolumeUsd)})
+                </span>
+              ) : null}
+            </SectionTitle>
+            {!downline || (downline.tree?.length ?? 0) === 0 ? (
+              <div className="text-[12px] text-fg-muted">No downline yet.</div>
+            ) : (
+              <div className="-my-0.5">
+                {downline.tree.map((n: any) => <DownlineNode key={n.id} node={n} depth={0} />)}
+                {downline.truncated && (
+                  <div className="text-[11px] text-fg-subtle mt-2">Showing the first {downline.totalMembers} members.</div>
+                )}
+              </div>
+            )}
+          </section>
+
           {/* Audit trail */}
           <section>
             <SectionTitle>Audit trail
@@ -333,6 +359,36 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <div className="text-[10px] uppercase tracking-wider font-semibold text-fg-subtle mb-1.5 pb-1.5 border-b border-hairline">
       {children}
+    </div>
+  );
+}
+
+function DownlineNode({ node, depth }: { node: any; depth: number }) {
+  const [open, setOpen] = useState(depth < 1);
+  const hasChildren = (node.children?.length ?? 0) > 0;
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 py-1 text-[12px]" style={{ paddingLeft: depth * 14 }}>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          disabled={!hasChildren}
+          className={cn('grid place-items-center size-4 rounded transition-colors', hasChildren ? 'text-fg-muted hover:text-fg' : 'opacity-0 pointer-events-none')}
+        >
+          <ChevronRight className={cn('size-3.5 transition-transform', open && 'rotate-90')} />
+        </button>
+        <Avatar name={node.username} size={20} />
+        <span className="text-fg truncate max-w-[120px]">{node.username}</span>
+        <Badge tone="neutral">L{node.level}</Badge>
+        {node.active && <Badge tone="success">active</Badge>}
+        <span className="text-fg-muted flex-1 truncate hidden sm:block">{node.email}</span>
+        <span className="text-fg-subtle tabular">{formatMoney(node.volumeUsd)}</span>
+      </div>
+      {open && hasChildren && (
+        <div className="border-l border-hairline ml-2">
+          {node.children.map((c: any) => <DownlineNode key={c.id} node={c} depth={depth + 1} />)}
+        </div>
+      )}
     </div>
   );
 }
