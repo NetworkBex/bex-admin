@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Activity, AlertTriangle, Check, ChevronRight, Clock, Database, FileText,
-  Play, RefreshCcw, RotateCcw, Server, ShieldCheck, Timer, Zap, Hash, ListOrdered,
+  Play, RefreshCcw, RotateCcw, Server, ShieldCheck, Timer, Zap, Hash, ListOrdered, Save,
 } from 'lucide-react';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Badge, PulseDot } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Field, Input, Select } from '@/components/ui/Input';
 import { PageHeader } from '@/components/PageHeader';
 import { EmptyState } from '@/components/EmptyState';
 import { opsAPI, earningsAPI } from '@/lib/api';
@@ -20,20 +21,51 @@ export default function OpsPage() {
   const [tasks, setTasks] = useState<any>(null);
   const [logs, setLogs] = useState<{ available: boolean; path?: string; lines: string[]; hint?: string; size_bytes?: number; line_count?: number } | null>(null);
   const [earnings, setEarnings] = useState<any>(null);
+  const [sched, setSched] = useState<any>(null);
+  const [schedTime, setSchedTime] = useState('23:59');
+  const [schedTz, setSchedTz] = useState('Europe/London');
+  const [schedEnabled, setSchedEnabled] = useState(true);
+  const [schedDirty, setSchedDirty] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const { push } = useToast();
 
+  const applySchedule = (s: any) => {
+    setSched(s);
+    setSchedTime(`${String(s.hour).padStart(2, '0')}:${String(s.minute).padStart(2, '0')}`);
+    setSchedTz(s.timezone || 'Europe/London');
+    setSchedEnabled(!!s.enabled);
+    setSchedDirty(false);
+  };
+
   const refresh = async () => {
     try {
-      const [h, b, t, l, e] = await Promise.all([
+      const [h, b, t, l, e, sc] = await Promise.all([
         opsAPI.health(),
         opsAPI.beat(),
         opsAPI.taskResults(),
         opsAPI.logs(300),
         earningsAPI.summary(),
+        opsAPI.getEarningsSchedule(),
       ]);
       setHealth(h.data); setBeat(b.data); setTasks(t.data); setLogs(l.data); setEarnings(e.data);
+      // Don't stomp unsaved edits on the 15s auto-refresh.
+      if (!schedDirty) applySchedule(sc.data);
     } catch {}
+  };
+
+  const saveSchedule = async () => {
+    const [hh, mm] = schedTime.split(':');
+    const hour = parseInt(hh, 10), minute = parseInt(mm, 10);
+    if (Number.isNaN(hour) || Number.isNaN(minute)) { push('Enter a valid time', 'error'); return; }
+    setBusy('schedule');
+    try {
+      const r = await opsAPI.setEarningsSchedule({ hour, minute, timezone: schedTz, enabled: schedEnabled });
+      applySchedule(r.data);
+      push(`Earnings schedule saved — ${schedTime} ${schedTz}`, 'success');
+    } catch (e: any) {
+      push(e?.response?.data?.error || 'Could not save schedule', 'error');
+    }
+    setBusy(null);
   };
 
   useEffect(() => {
@@ -109,6 +141,46 @@ export default function OpsPage() {
           extra={earnings ? `$${earnings.today}` : ''}
         />
       </div>
+
+      {/* Earnings schedule (admin-editable) */}
+      <Card className="mb-4">
+        <CardHeader
+          title="Daily earnings schedule"
+          description="When the daily profit is credited automatically. Beat applies the new time on its next reload — no deploy needed."
+          icon={<Clock className="size-4" />}
+        />
+        <CardBody className="flex flex-wrap items-end gap-4">
+          <Field label="Time" className="w-auto">
+            <Input type="time" value={schedTime}
+                   onChange={(e) => { setSchedTime(e.target.value); setSchedDirty(true); }}
+                   className="w-[130px]" />
+          </Field>
+          <Field label="Timezone" className="w-auto">
+            <Select value={schedTz}
+                    onChange={(e) => { setSchedTz(e.target.value); setSchedDirty(true); }}
+                    className="w-[190px]">
+              {(sched?.timezones || ['Europe/London', 'UTC']).map((tz: string) => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </Select>
+          </Field>
+          <label className="flex items-center gap-2 h-9 text-[13px] text-fg-muted cursor-pointer select-none">
+            <input type="checkbox" checked={schedEnabled}
+                   onChange={(e) => { setSchedEnabled(e.target.checked); setSchedDirty(true); }}
+                   className="size-4 accent-[var(--accent)]" />
+            Enabled
+          </label>
+          <Button onClick={saveSchedule} loading={busy === 'schedule'} disabled={!schedDirty}
+                  leadingIcon={<Save className="size-3.5" />}>
+            Save schedule
+          </Button>
+          {sched && (
+            <div className="text-[11.5px] text-fg-subtle ml-auto">
+              Last run: {sched.last_run_at ? relativeTime(sched.last_run_at) : 'never'} · {sched.total_run_count} total
+            </div>
+          )}
+        </CardBody>
+      </Card>
 
       {/* Manual triggers */}
       <Card className="mb-4">

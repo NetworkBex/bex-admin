@@ -178,4 +178,7 @@ export const opsAPI = {
   logs: (lines = 200) => api.get('/ops/logs/', { params: { lines } }),
   triggerCredit: (date?: string) => api.post('/ops/trigger/credit/', date ? { date } : {}),
   triggerBackfill: (days: number) => api.post('/ops/trigger/backfill/', { days }),
+  getEarningsSchedule: () => api.get('/ops/earnings/schedule/'),
+  setEarningsSchedule: (data: { hour: number; minute: number; timezone?: string; enabled?: boolean }) =>
+    api.post('/ops/earnings/schedule/', data),
 };
