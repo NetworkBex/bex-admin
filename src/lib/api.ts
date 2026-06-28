@@ -182,3 +182,8 @@ export const opsAPI = {
   setEarningsSchedule: (data: { hour: number; minute: number; timezone?: string; enabled?: boolean }) =>
     api.post('/ops/earnings/schedule/', data),
 };
+
+export const onrampAPI = {
+  list: () => api.get('/payments/onramps/admin/'),
+  save: (data: any) => api.post('/payments/onramps/admin/', data),
+};

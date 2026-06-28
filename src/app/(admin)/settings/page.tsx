@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { coreAPI } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 import { cn } from '@/lib/utils';
+import { FiatOnramps } from '@/components/settings/FiatOnramps';
 
 export default function SettingsPage() {
   const [draft, setDraft] = useState<any | null>(null);
@@ -91,6 +92,8 @@ export default function SettingsPage() {
           <Field label="Daily max (%)" hint="upper bound of the band"><Input type="number" step="0.01" value={draft.earnings_daily_max_percent} onChange={(e) => update('earnings_daily_max_percent', +e.target.value)} /></Field>
         </CardBody>
       </Card>
+
+      <FiatOnramps />
 
       <Card>
         <CardHeader title="Announcement banner" description="Shown at the top of the user dashboard when set." />
