@@ -83,6 +83,10 @@ export default function SettingsPage() {
           <Field label="Withdraw fee (%)" hint="percentage of each withdrawal"><Input type="number" step="0.01" value={draft.withdraw_fee_percent} onChange={(e) => update('withdraw_fee_percent', +e.target.value)} /></Field>
           <Field label="Withdraw fee (flat USD)" hint="fixed fee per withdrawal"><Input type="number" step="0.01" value={draft.withdraw_fee_flat_usd} onChange={(e) => update('withdraw_fee_flat_usd', +e.target.value)} /></Field>
         </CardBody>
+        <CardBody className="border-t border-hairline grid sm:grid-cols-2 gap-3">
+          <Toggle label="Fortnightly withdrawal window" description="Only allow withdrawal requests on the 1st & 16th (admins bypass)." value={!!draft.withdrawal_window_enabled} onChange={(v) => update('withdrawal_window_enabled', v)} />
+          <Field label="Window length (days)" hint="days the window stays open from the 1st / 16th"><Input type="number" min="1" max="14" value={draft.withdrawal_window_days ?? 3} onChange={(e) => update('withdrawal_window_days', +e.target.value)} /></Field>
+        </CardBody>
       </Card>
 
       <Card className="mb-4">
